@@ -1,0 +1,315 @@
+---
+title: "Joins"
+author: "K. Shoemaker"
+date: "DATA 2401"
+output:
+  slidy_presentation: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r, echo = F, message = F}
+library(tidyverse, warn.conflicts = F)
+```
+
+# Joins
+
+Sometimes you store data in different dataframes. Consider: you're a charity, and you have one data frame for donations, and one for email and phone number of your donors.
+
+- This helps with data storage: If you store every donation with the email and phone number, you're wasting space. 
+
+- This helps with data updating: If you need to update a donor's phone number, you only have to do it in one spot, not on every row of donations they've done. 
+
+*Those of you who have worked in SQL, this type of thinking should look familiar.* 
+
+--- 
+
+So, how do we do this? 
+
+You join data through data that is in both datasets: you need a way to tell the program how to join them. 
+
+You identify columns that are in both tables, then use these columns to "match" the corresponding rows. 
+
+---
+
+So, suppose we have this table of donations: 
+
+|Name| Amount | Date |
+| --- | --- | --- 
+| Sam | 100 | 2/12/2019 |
+| Mike | 50 | 2/12/2019 | 
+| Alice | 100 | 4/23/2019 |
+| Mike | 50 | 5/17/2019 |
+| Maria | 100 | 6/7/2019 |
+| Susanne | 50 | 7/2/2019 |
+
+And this table of donors: 
+
+|Name| Email |
+| --- | --- 
+| Sam | sam\@gmail.com 
+| Alice | aliceemail\@gmail.com
+| Susanne | susanneroks\@gmail.com
+| Mike | michael\@hotmail.com
+| Mary | mary\@gmail.com
+
+
+We would want to use "Name" to identify which rows correspond to each other in the table. 
+
+
+Now, how does R decide which order they go in and what gets left in or left out? You need to specify which type of join you want. 
+
+
+---
+
+## Types of Joins
+
+There are two main types of joins, mutating joins and filtering joins. 
+
+- Mutating joins add all the columns from one table to the other, combining the variables. 
+
+- Filtering joins only take the variables from the first table, but filter the rows based on whether or not that row is present in the second table. 
+
+--- 
+
+### Mutating Joins 
+
+The first kind of join combines variables from both data frames. 
+
+
+Straight from the R documentation: 
+
+- `left_join(x, y, by = )`: return all rows from x, and all columns from x and y. Rows in x with no match in y will have NA values in the new columns. If there are multiple matches between x and y, all combinations of the matches are returned.
+
+- `right_join(x, y, by = )`: return all rows from y, and all columns from x and y. Rows in y with no match in x will have NA values in the new columns. If there are multiple matches between x and y, all combinations of the matches are returned.
+
+- `inner_join(x, y, by = )`: return all rows from x where there are matching values in y, and all columns from x and y. If there are multiple matches between x and y, all combination of the matches are returned.
+
+- `full_join(x, y, by = )`:return all rows and all columns from both x and y. Where there are not matching values, returns NA for the one missing.
+
+How are these different?
+
+---
+
+
+
+And again with some simple data. *This data is from the join chapter on stat545.com, linked later in the notes. *
+
+At each step, note what variables and rows appear. 
+
+*Note:* I don't specify which key/identifier variable to use, so R finds variables with the  same names and matches using them. (It prints out what it uses so I can make sure it guessed right.)
+
+```{r}
+# make tibbles of data manually
+
+superheroes <- tibble::tribble(
+       ~name, ~alignment,  ~gender,          ~publisher,
+   "Magneto",      "bad",   "male",            "Marvel",
+     "Storm",     "good", "female",            "Marvel",
+  "Mystique",      "bad", "female",            "Marvel",
+    "Batman",     "good",   "male",                "DC",
+     "Joker",      "bad",   "male",                "DC",
+  "Catwoman",      "bad", "female",                "DC",
+   "Hellboy",     "good",   "male", "Dark Horse Comics"
+  )
+
+
+publishers <- tibble::tribble(
+  ~publisher, ~yr_founded,
+        "DC",       1934L,
+    "Marvel",       1939L,
+     "Image",       1992L
+  )
+
+superheroes
+publishers
+```
+
+---
+
+Inner join: Return all rows from x where there are matching values in y, and all columns from x and y.
+
+What is missing? Why? 
+
+```{r, message = F}
+inner_join(superheroes, publishers)
+```
+
+Think: how will `inner_join(publishers, superheroes)` be different? 
+
+---
+
+
+```{r}
+library(tidyverse)
+inner_join(publishers, superheroes)
+```
+
+---
+
+Left join: Return all rows from x, and all columns from x and y. If there are multiple matches between x and y, all combination of the matches are returned. 
+
+```{r}
+left_join(superheroes, publishers)
+```
+
+---
+
+Right join: Return all rows from y, and all columns from x and y. If there are multiple matches between x and y, all combination of the matches are returned. 
+
+*Note:* Not often used. This is the same as `left_join(publishers, superheroes)`
+
+```{r}
+right_join(superheroes, publishers)
+```
+
+--- 
+
+Full join: Return all rows and all columns from both x and y. Where there are not matching values, returns NA for the one missing
+
+```{r}
+full_join(superheroes, publishers)
+```
+
+
+---
+
+### Filtering Joins 
+
+Filtering joins keep just the cases from the first data frame, but filters using the second. 
+
+- `semi_join(x, y, by = )`: return all rows from x where there are matching values in y, keeping just columns from x.
+
+- `anti_join(x, y, by = )`: return all rows from x where there are not matching values in y, keeping just columns from x.
+
+---
+
+Semi join:  Return all rows from x where there are matching values in y, keeping just columns from x. 
+
+```{r}
+semi_join(superheroes, publishers)
+```
+
+How is this different than the result from inner_join(superheroes, publishers)?
+
+How will this compare to `semi_join(publishers, superheroes)`?
+
+---
+
+```{r}
+semi_join(publishers, superheroes)
+```
+
+---
+
+Anti join: Return all rows from x where there are not matching values in y, keeping just columns from x
+
+```{r}
+anti_join(superheroes, publishers)
+```
+
+
+I also highly suggest you read through Chapter 11 of our textbook, or Chapter 13 of R for Data Science:  https://r4ds.had.co.nz/relational-data.html
+or this lecture from Jenny Bryan: https://stat545.com/join-cheatsheet.html
+
+---
+
+# Examples 
+
+`band_members` and `band_instruments` are two data sets inside R that show these joins pretty well
+
+```{R}
+band_members
+band_instruments
+```
+
+Looking at the two datasets above, convince yourself what each of the different joins below will give you. Once you do so, change `eval = F` to `eval = T`
+```{R, eval = F}
+inner_join(band_members, band_instruments)
+full_join(band_members, band_instruments)
+left_join(band_members, band_instruments)
+right_join(band_members, band_instruments)
+
+members <- band_members %>% rename(player_name = name)
+members
+band_instruments
+inner_join(members,
+           band_instruments,
+           join_by(player_name == name))
+```
+
+
+```{r, eval = F}
+semi_join(band_members, band_instruments)
+anti_join(band_members, band_instruments)
+
+semi_join(band_instruments, band_members)
+anti_join(band_instruments, band_members)
+```
+
+# Practice
+
+We start by making some "healthcare" data: 
+
+```{r}
+# Patients table
+patients <- tibble(
+  patient_id = c(1, 2, 3, 4),
+  name = c("Alice", "Bob", "Charlie", "David"),
+  age = c(25, 40, 35, 50),
+  sex = c("F", "M", "F", "M")
+)
+
+# Visits table (Some patients have multiple visits, some missing)
+visits <- tibble(
+  visit_id = c(101, 102, 103, 104, 105),
+  patient_id = c(1, 2, 2, 3, 5),  
+  doctor_id = c(201, 202, 201, 203, 204),
+  visit_date = as.Date(c("2024-01-10", "2024-01-12", "2024-02-15", "2024-03-01", "2024-03-10"))
+)
+
+# Doctors table (Some doctors may not have treated any patients)
+doctors <- tibble(
+  doctor_id = c(201, 202, 203, 205),
+  doctor_name = c("Dr. Smith", "Dr. Johnson", "Dr. Lee", "Dr. Brown"),
+  specialty = c("Cardiology", "Neurology", "Pediatrics", "Orthopedics")
+)
+
+```
+
+Questions: 
+
+Find the names of patients who have visited the hospital. 
+```{r}
+inner_join(patients,visits)
+```
+
+Show all patients visit information, even if they haven't visited the hospital
+```{r}
+left_join(patients,visits)
+```
+
+List all the visits and patient information, even if there isn't information for the patient
+```{r}
+full_join(patients,visits)
+```
+
+Show all visits with their assigned doctors.
+```{r}
+full_join(visits,doctors)
+```
+
+Find the doctor(s) that Bob has met with. 
+```{r}
+patients %>% 
+  filter(name == "Bob") %>%
+  full_join(doctors)
+
+left_join(visits,patients) %>% left_join(doctors) %>% filter(name=="Bob") %>% select(name,doctor_name, speciality, everything)
+```
+
+Find patients that haven't visited the hospital
+```{r}
+anti_join(patients,visits)
+```
+

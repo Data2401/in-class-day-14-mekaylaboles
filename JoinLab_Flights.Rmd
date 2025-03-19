@@ -17,20 +17,28 @@ library(nycflights13)
 my_flights <- flights # store my own version
 my_flights <- na.omit(my_flights) ## this dataset has data on cancelled flights too, 
                                   ## so we 'll remove those for now
-
+library(dplyr)
 ```
 
 
 Create a dataframe of the average arrival delays for each _destination_
 
 ```{r}
-
+glimpse(my_flights)
+avg_arrival_data <- my_flights %>%
+                    group_by(dest) %>%
+                    summarize("Avg Arrival Delays" = mean(arr_delay))
+avg_arrival_data                 
 ```
 
 Then use `left_join()` to join on the "airports" dataframe, which has the airport information.
 
 ```{r}
+glimpse(airports)
+airports_avg_arrival <- avg_arrival_data %>%
+                        left_join(airports, by = c("dest" = "faa")) #in help notes dest = faa
 
+airports_avg_arrival
 ```
 
 
@@ -39,27 +47,38 @@ Note here: the column names don't match anymore!
 Which airport had the largest average arrival delay?
 
 ```{r}
-
+max_avg_arr <- airports_avg_arrival %>%
+              arrange(desc(`Avg Arrival Delays`)) %>%
+              slice(1)
+              
+              
+max_avg_arr
 ```
-
 
 
 What is the average departure delay for each airline? To answer this with something more than just the FAA code of the airline name, you need to create a dataframe of the average departure delay for each _airline_, then use `left_join()` to join on the "airlines" dataframe
 
 
 ```{r}
+avg_dep_per_airline <- my_flights %>%
+                      group_by(carrier) %>%
+                      summarize("Average Departure Delay" = mean(dep_delay, na.rm = TRUE)) %>%
+                      left_join(airlines, by = "carrier")
+avg_dep_per_airline
+                      
 
-
-````
+```
 
 Which airline had the smallest average departure delay? 
 
 
 
 ```{r}
+smallest_avg_dep_delay <- airports_avg_arrival %>%
+              arrange(`Avg Arrival Delays`) %>%
+              slice(1)
 
-
-
+smallest_avg_dep_delay
 ```
 
 
@@ -87,3 +106,11 @@ flights %>%
 
 What does anti_join(flights, airports, by = c("dest" = "faa")) tell you? What does anti_join(airports, flights, by = c("faa" = "dest")) tell you?
 Perform the two joins below and consider what the results are. 
+```{r}
+anti_join(flights, airports, by = c("dest" = "faa")) 
+#tells me all the flights that dont have airports in the airport dataset.
+
+anti_join(airports, flights, by = c("faa" = "dest"))
+#tells me all the airports that dont have any flights arriving.
+```
+
